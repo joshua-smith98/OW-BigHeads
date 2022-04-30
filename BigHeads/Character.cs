@@ -4,6 +4,10 @@ using UnityEngine;
 
 namespace BigHeads
 {
+    // Old and deprecated
+    // But I can't seem to part with it
+    // So much work unused
+    // Perhaps someone else can use it
     internal class Character
     {
         #region Static Members

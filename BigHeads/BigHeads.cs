@@ -2,6 +2,7 @@
 using OWML.ModHelper;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace BigHeads
@@ -11,36 +12,91 @@ namespace BigHeads
         float headScale = 3f;
         Vector3 headScaleVector;
 
-        #region Unity Methods
+        Transform[] headTransforms;
 
-        private void Start()
+        #region OWML Methods
+
+        public override void Configure(IModConfig config)
         {
-            LoadManager.OnCompleteSceneLoad += (scene, loadscene) =>
-            {
-                if (loadscene is OWScene.SolarSystem) Initialise();
-            };
+            Single.TryParse(config.GetSettingsValue<string>("headMultiplier"), out headScale);
+            ModHelper.Console.WriteLine("Applying settings...", MessageType.Info);
+            BigifyHeads();
         }
 
         #endregion
 
-        private void Initialise()
+        #region Unity Methods
+
+        private void Start()
         {
-            headScaleVector = new Vector3(headScale, headScale, headScale);
+            LoadManager.OnCompleteSceneLoad += (scene, loadscene) => BigifyHeads();
+        }
 
-            if (Character.modHelper is null)
-                Character.modHelper = ModHelper;
+        #endregion
 
-            foreach (Character character in Character.All)
+        private void BigifyHeads()
+        {
+            headScaleVector = new(headScale, headScale, headScale);
+
+            ModHelper.Console.WriteLine($"Searching for heads in scene: '{LoadManager.s_currentScene.ToString()}'", MessageType.Info);
+            headTransforms = GetHeads();
+            ModHelper.Console.WriteLine($"Found {headTransforms.Length} heads.", MessageType.Info);
+
+            foreach (Transform transform in headTransforms)
             {
-                var transform = character.GetTransform();
-                if (transform is null)
+                try
                 {
-                    ModHelper.Console.WriteLine($"Failed to patch headsize for {character.name}", MessageType.Error);
-                    continue;
+                    transform.localScale = headScaleVector;
                 }
-                transform.localScale = headScaleVector;
-                //ModHelper.Console.WriteLine($"Successfully patched headsize for {character.name}", MessageType.Success);
-                //Don't want to spam the console
+                catch (UnityException)
+                {
+                    ModHelper.Console.WriteLine($"Failed to set scale for head with bone: '{transform.name}'");
+                }
+            }
+        }
+
+        private Transform[] GetHeads()
+        {
+            // This could be pretty intensive, so best to only call it sparingly.
+
+            List<Transform> ANIMs = new List<Transform>();
+            List<Transform> heads = new List<Transform>();
+
+            GameObject[] gameObjects = Resources.FindObjectsOfTypeAll<GameObject>();
+
+            // Search for objects that have an ANIM child
+            foreach (GameObject gameObject in gameObjects)
+            {
+                int numChildren = gameObject.transform.childCount;
+                for (int i = 0; i < numChildren; i++)
+                {
+                    Transform child = gameObject.transform.GetChild(i);
+                    if (child.name.Contains("_ANIM")) ANIMs.Add(child);
+                }
+            }
+
+            foreach (Transform ANIM in ANIMs)
+            {
+                Transform head = FindHead(ANIM);
+
+                if (head is not null)
+                    heads.Add(head);
+            }
+
+            return heads.ToArray();
+
+            //Recursive method
+            Transform FindHead(Transform origin)
+            {
+                for (int i = 0; i < origin.childCount; i++)
+                {
+                    Transform child = origin.GetChild(i);
+                    Transform head = FindHead(child);
+                    if (head is not null) return head;
+                    else if (child.name.ToLower().Contains("neck")) return child;
+                }
+
+                return null;
             }
         }
     }
