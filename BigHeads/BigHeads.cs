@@ -1,30 +1,39 @@
 ﻿using OWML.Common;
 using OWML.ModHelper;
+using System;
+using UnityEngine;
 
-namespace ModTemplate
+namespace BigHeads
 {
-    public class ModTemplate : ModBehaviour
+    public class BigHeads : ModBehaviour
     {
-        private void Awake()
-        {
-            // You won't be able to access OWML's mod helper in Awake.
-            // So you probably don't want to do anything here.
-            // Use Start() instead.
-        }
+        Vector3 headScale = new(4, 4, 4);
+
+        #region Unity Methods
 
         private void Start()
         {
-            // Starting here, you'll have access to OWML's mod helper.
-            ModHelper.Console.WriteLine($"My mod {nameof(ModTemplate)} is loaded!", MessageType.Success);
+            Character.modHelper = ModHelper;
 
-            // Example of accessing game code.
-            LoadManager.OnCompleteSceneLoad += (scene, loadScene) =>
+            LoadManager.OnCompleteSceneLoad += (scene, loadscene) =>
             {
-                if (loadScene != OWScene.SolarSystem) return;
-                var playerBody = FindObjectOfType<PlayerBody>();
-                ModHelper.Console.WriteLine($"Found player body, and it's called {playerBody.name}!",
-                    MessageType.Success);
+                if (loadscene is not OWScene.SolarSystem)
+                    return;
+
+                foreach (Character character in Character.All)
+                {
+                    var transform = character.GetTransform();
+                    if (transform is null)
+                    {
+                        ModHelper.Console.WriteLine($"Failed the change headsize for {character.name}", MessageType.Error);
+                        continue;
+                    }
+                    transform.localScale = headScale;
+                }
+
             };
         }
+
+        #endregion
     }
 }
