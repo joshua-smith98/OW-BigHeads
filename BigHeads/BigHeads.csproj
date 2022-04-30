@@ -24,6 +24,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="ModTemplate.csproj.user" />
+    <Content Include="BigHeads.csproj.user" />
   </ItemGroup>
 </Project>
