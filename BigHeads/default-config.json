@@ -1,3 +1,10 @@
 {
-  "enabled": true
+  "enabled": true,
+  "settings": {
+    "headMultiplier": {
+      "type": "text",
+      "value": "3.0",
+      "title": "Head Size Multiplier"
+    }
+  }
 }
