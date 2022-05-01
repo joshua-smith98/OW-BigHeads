@@ -39,7 +39,9 @@ namespace BigHeads
             headScaleVector = new(headScale, headScale, headScale);
 
             ModHelper.Console.WriteLine($"Searching for heads in scene: '{LoadManager.s_currentScene.ToString()}'", MessageType.Info);
-            headTransforms = GetHeads();
+            headTransforms = GetHeads(
+                new[]{ "_anim" },
+                new[]{ "neck" });
             ModHelper.Console.WriteLine($"Found {headTransforms.Length} heads.", MessageType.Info);
 
             foreach (Transform transform in headTransforms)
@@ -55,11 +57,11 @@ namespace BigHeads
             }
         }
 
-        private Transform[] GetHeads()
+        private Transform[] GetHeads(string[] rigKeywords, string[] headKeywords)
         {
             // This could be pretty intensive, so best to only call it sparingly.
 
-            List<Transform> ANIMs = new List<Transform>();
+            List<Transform> rigs = new List<Transform>();
             List<Transform> heads = new List<Transform>();
 
             GameObject[] gameObjects = Resources.FindObjectsOfTypeAll<GameObject>();
@@ -71,19 +73,24 @@ namespace BigHeads
                 for (int i = 0; i < numChildren; i++)
                 {
                     Transform child = gameObject.transform.GetChild(i);
-                    if (child.name.Contains("_ANIM")) ANIMs.Add(child);
+                    foreach (string rigKeyword in rigKeywords)
+                        if (child.name.ToLower().Contains(rigKeyword))
+                        {
+                            rigs.Add(child);
+                            break;
+                        }
                 }
             }
 
-            foreach (Transform ANIM in ANIMs)
+            foreach (Transform rig in rigs)
             {
-                Transform head = FindHead(ANIM);
+                Transform head = FindHead(rig);
 
                 if (head is not null)
                     heads.Add(head);
             }
 
-            return heads.ToArray();
+                return heads.ToArray();
 
             //Recursive method
             Transform FindHead(Transform origin)
@@ -93,7 +100,8 @@ namespace BigHeads
                     Transform child = origin.GetChild(i);
                     Transform head = FindHead(child);
                     if (head is not null) return head;
-                    else if (child.name.ToLower().Contains("neck")) return child;
+                    else foreach (string headKeyword in headKeywords)
+                        if (child.name.ToLower().Contains(headKeyword)) return child;
                 }
 
                 return null;
